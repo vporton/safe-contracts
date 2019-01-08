@@ -92,7 +92,7 @@ contract('DailyLimitModule', function(accounts) {
         utils.logGasUsage(
             'execTransaction change daily limit',
             await gnosisSafe.execTransaction(
-                dailyLimitModule.address, 0, data, CALL, 100000, 0, web3.toWei(100, 'gwei'), 0, 0, sigs
+                dailyLimitModule.address, 0, data, CALL, 100000, 0, web3.toWei(100, 'gwei'), 0, 0, nonce, sigs
             )
         )
         dailyLimit = await dailyLimitModule.dailyLimits(0)
@@ -128,7 +128,7 @@ contract('DailyLimitModule', function(accounts) {
         let nonce = await gnosisSafe.nonce()
         transactionHash = await gnosisSafe.getTransactionHash(dailyLimitModule.address, 0, data, CALL, 100000, 0, 0, 0, 0, nonce)
         let sigs = utils.signTransaction(lw, [lw.accounts[0], lw.accounts[1]], transactionHash)
-        await gnosisSafe.execTransaction(dailyLimitModule.address, 0, data, CALL, 100000, 0, 0, 0, 0, sigs)
+        await gnosisSafe.execTransaction(dailyLimitModule.address, 0, data, CALL, 100000, 0, 0, 0, 0, nonce, sigs)
 
         // Withdrawal should fail as there are no tokens
         assert.equal(await testToken.balances(gnosisSafe.address), 0);

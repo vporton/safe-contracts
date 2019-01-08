@@ -31,7 +31,7 @@ contract GnosisSafe is MasterCopy, BaseSafe, SignatureDecoder, SecuredTokenTrans
     //    "SafeMessage(bytes message)"
     //);
     bytes32 public constant SAFE_MSG_TYPEHASH = 0x60b3cbf8b4a223d68d641b3b6ddf9a298e7f33710cf3d3a9d1146b5a6150fbca;
-    
+ 
     uint256 constant BUCKET_SIZE = 256;
     uint256 constant MAX_BUCKET_VALUE = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 
@@ -111,7 +111,7 @@ contract GnosisSafe is MasterCopy, BaseSafe, SignatureDecoder, SecuredTokenTrans
     function checkNonce(uint256 _nonce) internal {
         uint256 bucket = _nonce / BUCKET_SIZE;
         require(bucket >= nextBucket, "Nonce too small");
-        uint256 buckedMask = 1 << _nonce % BUCKET_SIZE; 
+        uint256 buckedMask = 1 << _nonce % BUCKET_SIZE;
         uint256 buckedValue = buckets[bucket];
         require((buckets[bucket] & buckedMask) == 0, "Nonce alread used");
         buckedValue = buckedValue | buckedMask;

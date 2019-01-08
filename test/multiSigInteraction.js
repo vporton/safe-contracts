@@ -5,9 +5,6 @@ const BigNumber = require('bignumber.js');
 
 const GnosisSafe = artifacts.require("./GnosisSafe.sol")
 const ProxyFactory = artifacts.require("./ProxyFactory.sol")
-const MockContract = artifacts.require('./MockContract.sol');
-const MockToken = artifacts.require('./Token.sol');
-const MultiSigWalletWithDailyLimit = artifacts.require("./MultiSigWalletWithDailyLimit.sol")
 
 contract('GnosisSafePersonalEdition', function(accounts) {
 
@@ -71,7 +68,6 @@ contract('GnosisSafePersonalEdition', function(accounts) {
         let executorDiff = await web3.eth.getBalance(executor) - executorBalance
         console.log("    Executor earned " + web3.fromWei(executorDiff, 'ether') + " ETH")
         assert.ok(executorDiff > 0)
-        assert.ok(false)
     });
 })
 

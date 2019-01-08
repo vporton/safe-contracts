@@ -67,7 +67,7 @@ contract('MultiSend', function(accounts) {
         utils.logGasUsage(
             'execTransaction send multiple transactions',
             await gnosisSafe.execTransaction(
-                multiSend.address, 0, data, DELEGATECALL, 0, 0, 0, 0, 0, sigs
+                multiSend.address, 0, data, DELEGATECALL, 0, 0, 0, 0, 0, nonce, sigs
             )
         )
         assert.equal(await web3.eth.getBalance(gnosisSafe.address).toNumber(), 0)
@@ -89,7 +89,7 @@ contract('MultiSend', function(accounts) {
         let sigs = utils.signTransaction(lw, [lw.accounts[0]], transactionHash)
         utils.checkTxEvent(
             await gnosisSafe.execTransaction(
-                multiSend.address, 0, data, DELEGATECALL, 0, 0, 0, 0, 0, sigs
+                multiSend.address, 0, data, DELEGATECALL, 0, 0, 0, 0, 0, nonce, sigs
             ),
             'ExecutionFailed', gnosisSafe.address, true, 'execTransaction send multiple transactions'
         )
@@ -113,7 +113,7 @@ contract('MultiSend', function(accounts) {
         let sigs = utils.signTransaction(lw, [lw.accounts[0]], transactionHash)
         utils.checkTxEvent(
             await gnosisSafe.execTransaction(
-                multiSend.address, 0, data, DELEGATECALL, 0, 0, 0, 0, 0, sigs
+                multiSend.address, 0, data, DELEGATECALL, 0, 0, 0, 0, 0, nonce, sigs
             ),
             'ExecutionFailed', gnosisSafe.address, true, 'execTransaction send multiple transactions'
         )

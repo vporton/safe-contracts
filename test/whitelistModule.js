@@ -70,7 +70,7 @@ contract('WhitelistModule', function(accounts) {
         utils.logGasUsage(
             'execTransaction add account to whitelist',
             await gnosisSafe.execTransaction(
-                whitelistModule.address, 0, data, CALL, 0, 0, 0, 0, 0, sigs
+                whitelistModule.address, 0, data, CALL, 0, 0, 0, 0, 0, nonce, sigs
             )
         )
         assert.equal(await whitelistModule.isWhitelisted(accounts[1]), true)
@@ -82,7 +82,7 @@ contract('WhitelistModule', function(accounts) {
         utils.logGasUsage(
             'execTransaction remove account from whitelist',
             await gnosisSafe.execTransaction(
-                whitelistModule.address, 0, data, CALL, 0, 0, 0, 0, 0, sigs
+                whitelistModule.address, 0, data, CALL, 0, 0, 0, 0, 0, nonce, sigs
             )
         )
         assert.equal(await whitelistModule.isWhitelisted(accounts[1]), false)
