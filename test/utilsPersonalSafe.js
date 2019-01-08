@@ -4,13 +4,13 @@ const BigNumber = require('bignumber.js');
 
 const GAS_PRICE = web3.toWei(100, 'gwei')
 
-let estimateDataGas = function(safe, to, value, data, operation, txGasEstimate, gasToken, refundReceiver, signatureCount) {
+let estimateDataGas = function(safe, to, value, data, operation, txGasEstimate, gasToken, refundReceiver, nonce, signatureCount) {
     // numbers < 256 are 192 -> 31 * 4 + 68
     // numbers < 65k are 256 -> 30 * 4 + 2 * 68
     // For signature array length and dataGasEstimate we already calculated the 0 bytes so we just add 64 for each non-zero byte
     let signatureCost = signatureCount * (68 + 2176 + 2176) // array count (3 -> r, s, v) * signature count
     let payload = safe.contract.execTransaction.getData(
-        to, value, data, operation, txGasEstimate, 0, GAS_PRICE, gasToken, refundReceiver, "0x"
+        to, value, data, operation, txGasEstimate, 0, GAS_PRICE, gasToken, refundReceiver, nonce, "0x"
     )
     let dataGasEstimate = utils.estimateDataGasCosts(payload) + signatureCost
     if (dataGasEstimate > 65536) {
@@ -18,7 +18,7 @@ let estimateDataGas = function(safe, to, value, data, operation, txGasEstimate, 
     } else {
         dataGasEstimate += 128
     }
-    return dataGasEstimate + 32000; // Add aditional gas costs (e.g. base tx costs, transfer costs)
+    return dataGasEstimate + 33000; // Add aditional gas costs (e.g. base tx costs, transfer costs)
 }
 
 let executeTransactionWithSigner = async function(signer, safe, subject, accounts, to, value, data, operation, executor, opts) {
@@ -39,9 +39,9 @@ let executeTransactionWithSigner = async function(signer, safe, subject, account
     } catch(e) {
         console.log("    Could not estimate " + subject)
     }
-    let nonce = await safe.nonce()
+    let nonce = options.nonce || await safe.nonce()
 
-    let dataGasEstimate = estimateDataGas(safe, to, value, data, operation, txGasEstimate, txGasToken, refundReceiver, accounts.length)
+    let dataGasEstimate = estimateDataGas(safe, to, value, data, operation, txGasEstimate, txGasToken, refundReceiver, nonce, accounts.length)
     console.log("    Data Gas estimate: " + dataGasEstimate)
 
     let gasPrice = GAS_PRICE
@@ -53,7 +53,7 @@ let executeTransactionWithSigner = async function(signer, safe, subject, account
     let sigs = await signer(to, value, data, operation, txGasEstimate, dataGasEstimate, gasPrice, txGasToken, refundReceiver, nonce)
     
     let payload = safe.contract.execTransaction.getData(
-        to, value, data, operation, txGasEstimate, dataGasEstimate, gasPrice, txGasToken, refundReceiver, sigs
+        to, value, data, operation, txGasEstimate, dataGasEstimate, gasPrice, txGasToken, refundReceiver, nonce, sigs
     )
     console.log("    Data costs: " + utils.estimateDataGasCosts(payload))
 
@@ -61,7 +61,7 @@ let executeTransactionWithSigner = async function(signer, safe, subject, account
     let estimate = null
     try {
         estimate = await safe.execTransaction.estimateGas(
-            to, value, data, operation, txGasEstimate, dataGasEstimate, gasPrice, txGasToken, refundReceiver, sigs
+            to, value, data, operation, txGasEstimate, dataGasEstimate, gasPrice, txGasToken, refundReceiver, nonce, sigs
         )
     } catch (e) {
         if (options.revertMessage == undefined ||options.revertMessage == null) {
@@ -74,7 +74,7 @@ let executeTransactionWithSigner = async function(signer, safe, subject, account
     // Execute paying transaction
     // We add the txGasEstimate and an additional 10k to the estimate to ensure that there is enough gas for the safe transaction
     let tx = await safe.execTransaction(
-        to, value, data, operation, txGasEstimate, dataGasEstimate, gasPrice, txGasToken, refundReceiver, sigs, {from: executor, gas: estimate + txGasEstimate + 10000}
+        to, value, data, operation, txGasEstimate, dataGasEstimate, gasPrice, txGasToken, refundReceiver, nonce, sigs, {from: executor, gas: estimate + txGasEstimate + 10000}
     )
     let events = utils.checkTxEvent(tx, 'ExecutionFailed', safe.address, txFailed, subject)
     if (txFailed) {

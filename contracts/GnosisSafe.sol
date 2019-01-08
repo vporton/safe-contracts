@@ -31,15 +31,20 @@ contract GnosisSafe is MasterCopy, BaseSafe, SignatureDecoder, SecuredTokenTrans
     //    "SafeMessage(bytes message)"
     //);
     bytes32 public constant SAFE_MSG_TYPEHASH = 0x60b3cbf8b4a223d68d641b3b6ddf9a298e7f33710cf3d3a9d1146b5a6150fbca;
+    
+    uint256 constant BUCKET_SIZE = 256;
+    uint256 constant MAX_BUCKET_VALUE = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 
     event ExecutionFailed(bytes32 txHash);
 
-    uint256 public nonce;
+    uint256 public nextBucket;
     bytes32 public domainSeparator;
     // Mapping to keep track of all message hashes that have been approve by ALL REQUIRED owners
     mapping(bytes32 => uint256) public signedMessages;
     // Mapping to keep track of all hashes (message or transaction) that have been approve by ANY owners
     mapping(address => mapping(bytes32 => uint256)) public approvedHashes;
+
+    mapping(uint256 => uint256) public buckets;
 
     /// @dev Setup function sets initial storage of contract.
     /// @param _owners List of Safe owners.
@@ -69,27 +74,27 @@ contract GnosisSafe is MasterCopy, BaseSafe, SignatureDecoder, SecuredTokenTrans
     function execTransaction(
         address to,
         uint256 value,
-        bytes calldata data,
+        bytes memory data,
         Enum.Operation operation,
         uint256 safeTxGas,
         uint256 dataGas,
         uint256 gasPrice,
         address gasToken,
         address payable refundReceiver,
-        bytes calldata signatures
+        uint256 _nonce,
+        bytes memory signatures
     )
-        external
+        public
         returns (bool success)
     {
         uint256 startGas = gasleft();
         bytes memory txHashData = encodeTransactionData(
             to, value, data, operation, // Transaction info
             safeTxGas, dataGas, gasPrice, gasToken, refundReceiver, // Payment info
-            nonce
+            _nonce
         );
+        checkNonce(_nonce);
         require(checkSignatures(keccak256(txHashData), txHashData, signatures, true), "Invalid signatures provided");
-        // Increase nonce and execute transaction.
-        nonce++;
         require(gasleft() >= safeTxGas, "Not enough gas to execute safe transaction");
         // If no safeTxGas has been set and the gasPrice is 0 we assume that all available gas can be used
         success = execute(to, value, data, operation, safeTxGas == 0 && gasPrice == 0 ? gasleft() : safeTxGas);
@@ -100,6 +105,21 @@ contract GnosisSafe is MasterCopy, BaseSafe, SignatureDecoder, SecuredTokenTrans
         // We transfer the calculated tx costs to the tx.origin to avoid sending it to intermediate contracts that have made calls
         if (gasPrice > 0) {
             handlePayment(startGas, dataGas, gasPrice, gasToken, refundReceiver);
+        }
+    }
+
+    function checkNonce(uint256 _nonce) internal {
+        uint256 bucket = _nonce / BUCKET_SIZE;
+        require(bucket >= nextBucket, "Nonce too small");
+        uint256 buckedMask = 1 << _nonce % BUCKET_SIZE; 
+        uint256 buckedValue = buckets[bucket];
+        require((buckets[bucket] & buckedMask) == 0, "Nonce alread used");
+        buckedValue = buckedValue | buckedMask;
+        if (buckedValue == MAX_BUCKET_VALUE) {
+            nextBucket = bucket + 1;
+            buckets[bucket] = 0;
+        } else {
+            buckets[bucket] = buckedValue;
         }
     }
 
@@ -332,5 +352,14 @@ contract GnosisSafe is MasterCopy, BaseSafe, SignatureDecoder, SecuredTokenTrans
         returns (bytes32)
     {
         return keccak256(encodeTransactionData(to, value, data, operation, safeTxGas, dataGas, gasPrice, gasToken, refundReceiver, _nonce));
+    }
+
+    function nonce() public view returns (uint256) {
+        uint256 _nonce = nextBucket * BUCKET_SIZE;
+        while(true) {
+            if((buckets[_nonce / BUCKET_SIZE] & (1 << (_nonce % BUCKET_SIZE))) == 0)
+                return _nonce;
+            _nonce++;
+        }
     }
 }

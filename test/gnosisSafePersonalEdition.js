@@ -53,6 +53,27 @@ contract('GnosisSafePersonalEdition', function(accounts) {
         assert.ok(executorDiff > 0)
     });
 
+    it('should deposit and withdraw 1 ETH with out of order nonce', async () => {
+        // Deposit 1 ETH + some spare money for execution
+        assert.equal(await web3.eth.getBalance(gnosisSafe.address), 0)
+        await web3.eth.sendTransaction({from: accounts[0], to: gnosisSafe.address, value: web3.toWei(1.1, 'ether')})
+        assert.equal(await web3.eth.getBalance(gnosisSafe.address).toNumber(), web3.toWei(1.1, 'ether'))
+
+        let executorBalance = await web3.eth.getBalance(executor).toNumber()
+
+        // Withdraw 1 ETH
+        await safeUtils.executeTransaction(lw, gnosisSafe, 'executeTransaction withdraw 0.5 ETH', [lw.accounts[0], lw.accounts[2]], accounts[0], web3.toWei(0.5, 'ether'), "0x", CALL, executor, { nonce: 1023 })
+
+        await safeUtils.executeTransaction(lw, gnosisSafe, 'executeTransaction withdraw 0.5 ETH', [lw.accounts[0], lw.accounts[2]], accounts[0], web3.toWei(0.5, 'ether'), "0x", CALL, executor, { nonce: 1022 })
+
+        // Should fail as it is over the balance (payment should still happen)
+        await safeUtils.executeTransaction(lw, gnosisSafe, 'executeTransaction withdraw 0.5 ETH', [lw.accounts[0], lw.accounts[2]], accounts[0], web3.toWei(0.5, 'ether'), "0x", CALL, executor, { nonce: 1024, fails: true})
+
+        let executorDiff = await web3.eth.getBalance(executor) - executorBalance
+        console.log("    Executor earned " + web3.fromWei(executorDiff, 'ether') + " ETH")
+        assert.ok(executorDiff > 0)
+    });
+
     it('should deposit and withdraw 1 ETH paying with token', async () => {
         let token = await safeUtils.deployToken(accounts[0]);
         let executorBalance = (await token.balances(executor)).toNumber();
