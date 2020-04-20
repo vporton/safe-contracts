@@ -2,19 +2,11 @@ const util = require('util');
 const solc = require('solc')
 const lightwallet = require('eth-lightwallet')
 const abi = require("ethereumjs-abi")
-//const SolidityEvent = require("web3/lib/web3/event.js");
-const ModuleDataWrapper = new web3.eth.Contract([{"constant":false,"inputs":[{"name":"data","type":"bytes"}],"name":"setup","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"}]);
-
 const Address0 = "0x".padEnd(42, '0')
 
 const formatAddress = (address) => web3.utils.toChecksumAddress(address)
 
 const formatAddresses = (addressArray) => addressArray.map((o) => web3.utils.toChecksumAddress(o))
-
-function createAndAddModulesData(dataArray) {
-    // Remove method id (10) and position of data in payload (64)
-    return dataArray.reduce((acc, data) => acc + ModuleDataWrapper.methods.setup(data).encodeABI().substr(74), "0x")
-}
 
 function currentTimeNs() {
     const hrTime=process.hrtime();
@@ -84,8 +76,8 @@ function logGasUsage(subject, transactionOrReceipt) {
     console.log("    Gas costs for " + subject + ": " + receipt.gasUsed)
 }
 
-async function deployContract(subject, contract) {
-    let deployed = await contract.new()
+async function deployContract(subject, contract, args) {
+    let deployed = await contract.new(...args)
     let receipt = await web3.eth.getTransactionReceipt(deployed.transactionHash)
     logGasUsage(subject, receipt)
     return deployed
@@ -175,7 +167,6 @@ Object.assign(exports, {
     formatAddress,
     formatAddresses,
     web3ContactFactory,
-    createAndAddModulesData,
     currentTimeNs,
     compile,
     deployContract,

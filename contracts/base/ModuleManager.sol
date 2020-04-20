@@ -5,28 +5,28 @@ import "./Executor.sol";
 import "./Module.sol";
 
 
+contract ModuleManagerStorage {
+    address internal constant SENTINEL_MODULES = address(0x1);
+
+    mapping (address => address) internal modules;
+}
+
+
 /// @title Module Manager - A contract that manages modules that can execute transactions via this contract
 /// @author Stefan George - <stefan@gnosis.pm>
 /// @author Richard Meissner - <richard@gnosis.pm>
-contract ModuleManager is SelfAuthorized, Executor {
+contract ModuleManager is SelfAuthorized, Executor, ModuleManagerStorage {
 
     event EnabledModule(Module module);
     event DisabledModule(Module module);
     event ExecutionFromModuleSuccess(address indexed module);
     event ExecutionFromModuleFailure(address indexed module);
 
-    address internal constant SENTINEL_MODULES = address(0x1);
-
-    mapping (address => address) internal modules;
-
-    function setupModules(address to, bytes memory data)
+    function setupModules()
         internal
     {
         require(modules[SENTINEL_MODULES] == address(0), "Modules have already been initialized");
         modules[SENTINEL_MODULES] = SENTINEL_MODULES;
-        if (to != address(0))
-            // Setup has to complete successfully or transaction fails.
-            require(executeDelegateCall(to, data, gasleft()), "Could not finish initialization");
     }
 
     /// @dev Allows to add a module to the whitelist.
@@ -101,45 +101,6 @@ contract ModuleManager is SelfAuthorized, Executor {
             returndatacopy(add(ptr, 0x20), 0, returndatasize())
             // Point the return data to the correct memory location
             returnData := ptr
-        }
-    }
-
-    /// @dev Returns array of first 10 modules.
-    /// @return Array of modules.
-    function getModules()
-        public
-        view
-        returns (address[] memory)
-    {
-        (address[] memory array,) = getModulesPaginated(SENTINEL_MODULES, 10);
-        return array;
-    }
-
-    /// @dev Returns array of modules.
-    /// @param start Start of the page.
-    /// @param pageSize Maximum number of modules that should be returned.
-    /// @return Array of modules.
-    function getModulesPaginated(address start, uint256 pageSize)
-        public
-        view
-        returns (address[] memory array, address next)
-    {
-        // Init array with max page size
-        array = new address[](pageSize);
-
-        // Populate return array
-        uint256 moduleCount = 0;
-        address currentModule = modules[start];
-        while(currentModule != address(0x0) && currentModule != SENTINEL_MODULES && moduleCount < pageSize) {
-            array[moduleCount] = currentModule;
-            currentModule = modules[currentModule];
-            moduleCount++;
-        }
-        next = currentModule;
-        // Set correct size of returned array
-        // solium-disable-next-line security/no-inline-assembly
-        assembly {
-            mstore(array, moduleCount)
         }
     }
 }

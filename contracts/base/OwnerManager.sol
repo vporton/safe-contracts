@@ -1,20 +1,22 @@
 pragma solidity >=0.5.0 <0.7.0;
 import "../common/SelfAuthorized.sol";
 
-/// @title OwnerManager - Manages a set of owners and a threshold to perform actions.
-/// @author Stefan George - <stefan@gnosis.pm>
-/// @author Richard Meissner - <richard@gnosis.pm>
-contract OwnerManager is SelfAuthorized {
-
-    event AddedOwner(address owner);
-    event RemovedOwner(address owner);
-    event ChangedThreshold(uint256 threshold);
-
+contract OwnerManagerStorage {
     address internal constant SENTINEL_OWNERS = address(0x1);
 
     mapping(address => address) internal owners;
     uint256 ownerCount;
     uint256 internal threshold;
+}
+
+/// @title OwnerManager - Manages a set of owners and a threshold to perform actions.
+/// @author Stefan George - <stefan@gnosis.pm>
+/// @author Richard Meissner - <richard@gnosis.pm>
+contract OwnerManager is SelfAuthorized, OwnerManagerStorage {
+
+    event AddedOwner(address owner);
+    event RemovedOwner(address owner);
+    event ChangedThreshold(uint256 threshold);
 
     /// @dev Setup function sets initial storage of contract.
     /// @param _owners List of Safe owners.
@@ -48,8 +50,8 @@ contract OwnerManager is SelfAuthorized {
     /// @dev Allows to add a new owner to the Safe and update the threshold at the same time.
     ///      This can only be done via a Safe transaction.
     /// @param owner New owner address.
-    /// @param _threshold New threshold.
-    function addOwnerWithThreshold(address owner, uint256 _threshold)
+    /// @param increaseThreshold true if threshold should be increased by 1.
+    function addOwner(address owner, bool increaseThreshold)
         public
         authorized
     {
@@ -62,21 +64,20 @@ contract OwnerManager is SelfAuthorized {
         ownerCount++;
         emit AddedOwner(owner);
         // Change threshold if threshold was changed.
-        if (threshold != _threshold)
-            changeThreshold(_threshold);
+        uint newThrehsold = increaseThreshold ? threshold - 1 : threshold;
+        if (threshold != newThrehsold)
+            changeThreshold(newThrehsold);
     }
 
     /// @dev Allows to remove an owner from the Safe and update the threshold at the same time.
     ///      This can only be done via a Safe transaction.
     /// @param prevOwner Owner that pointed to the owner to be removed in the linked list
     /// @param owner Owner address to be removed.
-    /// @param _threshold New threshold.
-    function removeOwner(address prevOwner, address owner, uint256 _threshold)
+    /// @param decreaseThreshold true if threshold should be decreased by 1.
+    function removeOwner(address prevOwner, address owner, bool decreaseThreshold)
         public
         authorized
     {
-        // Only allow to remove an owner, if threshold can still be reached.
-        require(ownerCount - 1 >= _threshold, "New owner count needs to be larger than new threshold");
         // Validate owner address and check that it corresponds to owner index.
         require(owner != address(0) && owner != SENTINEL_OWNERS, "Invalid owner address provided");
         require(owners[prevOwner] == owner, "Invalid prevOwner, owner pair provided");
@@ -85,8 +86,9 @@ contract OwnerManager is SelfAuthorized {
         ownerCount--;
         emit RemovedOwner(owner);
         // Change threshold if threshold was changed.
-        if (threshold != _threshold)
-            changeThreshold(_threshold);
+        uint newThrehsold = decreaseThreshold ? threshold - 1 : threshold;
+        if (threshold != newThrehsold)
+            changeThreshold(newThrehsold);
     }
 
     /// @dev Allows to swap/replace an owner from the Safe with another address.
@@ -127,11 +129,7 @@ contract OwnerManager is SelfAuthorized {
         emit ChangedThreshold(threshold);
     }
 
-    function getThreshold()
-        public
-        view
-        returns (uint256)
-    {
+    function getThreshold() public view returns(uint) {
         return threshold;
     }
 
@@ -141,25 +139,5 @@ contract OwnerManager is SelfAuthorized {
         returns (bool)
     {
         return owner != SENTINEL_OWNERS && owners[owner] != address(0);
-    }
-
-    /// @dev Returns array of owners.
-    /// @return Array of Safe owners.
-    function getOwners()
-        public
-        view
-        returns (address[] memory)
-    {
-        address[] memory array = new address[](ownerCount);
-
-        // populate return array
-        uint256 index = 0;
-        address currentOwner = owners[SENTINEL_OWNERS];
-        while(currentOwner != SENTINEL_OWNERS) {
-            array[index] = currentOwner;
-            currentOwner = owners[currentOwner];
-            index ++;
-        }
-        return array;
     }
 }

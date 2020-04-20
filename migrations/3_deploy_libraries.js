@@ -1,7 +1,7 @@
-var CreateAndAddModules = artifacts.require("./CreateAndAddModules.sol");
 var MultiSend = artifacts.require("./MultiSend.sol");
+var GnosisSafeStateReader = artifacts.require("./GnosisSafeStateReader.sol");
 
 module.exports = function(deployer) {
-    deployer.deploy(CreateAndAddModules);
     deployer.deploy(MultiSend);
+    deployer.deploy(GnosisSafeStateReader);
 };

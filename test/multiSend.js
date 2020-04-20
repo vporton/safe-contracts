@@ -6,8 +6,6 @@ const abi = require("ethereumjs-abi")
 const GnosisSafe = artifacts.require("./GnosisSafe.sol")
 const ProxyFactory = artifacts.require("./GnosisSafeProxyFactory.sol")
 const MultiSend = artifacts.require("./libraries/MultiSend.sol")
-const CreateAndAddModules = artifacts.require("./libraries/CreateAndAddModules.sol")
-const StateChannelModule = artifacts.require("./modules/StateChannelModule.sol")
 
 
 contract('MultiSend', function(accounts) {
@@ -15,7 +13,6 @@ contract('MultiSend', function(accounts) {
     let gnosisSafe
     let gnosisSafeMasterCopy
     let multiSend
-    let createAndAddModules
     let proxyFactory
     let stateChannelModuleMasterCopy
 
@@ -41,7 +38,6 @@ contract('MultiSend', function(accounts) {
             'ProxyCreation', 'proxy', proxyFactory.address, GnosisSafe, 'create Gnosis Safe Proxy',
         )
         multiSend = await MultiSend.new()
-        createAndAddModules = await CreateAndAddModules.new()
 
         stateChannelModuleMasterCopy = await StateChannelModule.new()
     })
@@ -49,8 +45,6 @@ contract('MultiSend', function(accounts) {
     it('should deposit and withdraw 2 ETH and change threshold in 1 transaction', async () => {
         // Threshold is 1 after deployment
         assert.equal(await gnosisSafe.getThreshold(), 1)
-        // No modules present after deployment
-        assert.deepEqual(await gnosisSafe.getModules(), [])
         // Deposit 2 ETH
         assert.equal(await web3.eth.getBalance(gnosisSafe.address), 0)
         await web3.eth.sendTransaction({from: accounts[0], to: gnosisSafe.address, value: web3.utils.toWei("2", 'ether')})
@@ -60,18 +54,10 @@ contract('MultiSend', function(accounts) {
 
         let changeData = await gnosisSafe.contract.methods.changeThreshold(2).encodeABI()
 
-        let stateChannelSetupData = await stateChannelModuleMasterCopy.contract.methods.setup().encodeABI()
-        let stateChannelCreationData = await proxyFactory.contract.methods.createProxy(stateChannelModuleMasterCopy.address, stateChannelSetupData).encodeABI()
-
-        // Create library data
-        let modulesCreationData = utils.createAndAddModulesData([stateChannelCreationData])
-        let createAndAddModulesData = await createAndAddModules.contract.methods.createAndAddModules(proxyFactory.address, modulesCreationData).encodeABI()
-
         let nestedTransactionData = '0x' +
             encodeData(0, gnosisSafe.address, 0, '0x' + '0'.repeat(64)) +
             encodeData(0, gnosisSafe.address, 0, changeData) +
             encodeData(0, accounts[0], web3.utils.toWei("0.5", 'ether'), '0x') +
-            encodeData(1, createAndAddModules.address, 0, createAndAddModulesData) +
             encodeData(0, accounts[1], web3.utils.toWei("0.5", 'ether'), '0x') +
             encodeData(0, accounts[2], web3.utils.toWei("1", 'ether'), '0x')
         let data = await multiSend.contract.methods.multiSend(nestedTransactionData).encodeABI()
@@ -85,20 +71,10 @@ contract('MultiSend', function(accounts) {
         )
         assert.equal(await web3.eth.getBalance(gnosisSafe.address), 0)
         assert.equal(await gnosisSafe.getThreshold(), 2)
-        let modules = await gnosisSafe.getModules()
-        assert.equal(modules.length, 1)
-        assert.equal(await web3.eth.getStorageAt(modules[0], 0), stateChannelModuleMasterCopy.address.toLowerCase())
     })
 
     it('Use multisend on deployment', async () => {
         let changeData = await gnosisSafe.contract.methods.changeThreshold(2).encodeABI()
-
-        let stateChannelSetupData = await stateChannelModuleMasterCopy.contract.methods.setup().encodeABI()
-        let stateChannelCreationData = await proxyFactory.contract.methods.createProxy(stateChannelModuleMasterCopy.address, stateChannelSetupData).encodeABI()
-
-        // Create library data
-        let modulesCreationData = utils.createAndAddModulesData([stateChannelCreationData])
-        let createAndAddModulesData = await createAndAddModules.contract.methods.createAndAddModules(proxyFactory.address, modulesCreationData).encodeABI()
 
         let newSafeAddress = "0x" + util.generateAddress(proxyFactory.address, await web3.eth.getTransactionCount(proxyFactory.address)).toString("hex")
         assert.equal(await web3.eth.getBalance(newSafeAddress), 0)
@@ -108,7 +84,6 @@ contract('MultiSend', function(accounts) {
             encodeData(0, newSafeAddress, 0, '0x' + '0'.repeat(64)) +
             encodeData(0, newSafeAddress, 0, changeData) +
             encodeData(0, accounts[0], web3.utils.toWei("0.5", 'ether'), '0x') +
-            encodeData(1, createAndAddModules.address, 0, createAndAddModulesData) +
             encodeData(0, accounts[1], web3.utils.toWei("0.5", 'ether'), '0x') +
             encodeData(0, accounts[2], web3.utils.toWei("1", 'ether'), '0x')
         let multiSendData = await multiSend.contract.methods.multiSend(nestedTransactionData).encodeABI()
@@ -125,11 +100,6 @@ contract('MultiSend', function(accounts) {
         assert.equal(newSafe.address, utils.formatAddress(newSafeAddress))
         assert.equal(await web3.eth.getBalance(newSafeAddress), 0)
         assert.equal(await newSafe.getThreshold(), 2)
-        let modules = await newSafe.getModules()
-        assert.equal(modules.length, 1)
-        assert.equal(await web3.eth.getStorageAt(modules[0], 0), stateChannelModuleMasterCopy.address.toLowerCase())
-        let scModule = await StateChannelModule.at(modules[0])
-        assert.equal(await scModule.manager(), utils.formatAddress(newSafeAddress))
     })
 
     it('invalid operation should fail', async () => {
