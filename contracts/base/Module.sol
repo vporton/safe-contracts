@@ -10,7 +10,7 @@ contract Module is MasterCopy {
 
     ModuleManager public manager;
 
-    modifier authorized() {
+    modifier authorized() override {
         require(msg.sender == address(manager), "Method can only be called from manager");
         _;
     }
