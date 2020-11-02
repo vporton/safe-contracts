@@ -6,6 +6,14 @@ import "../common/MasterCopy.sol";
 
 contract GnosisSafeStateReader is MasterCopyStorage, ModuleManagerStorage, OwnerManagerStorage, GnosisSafeStorage {
 
+    function isOwner(address owner)
+        public
+        view
+        returns (bool)
+    {
+        return owner != SENTINEL_OWNERS && owners[owner] != address(0);
+    }
+
     /// @dev Returns array of first 10 modules.
     /// @return Array of modules.
     function getModules()
@@ -49,14 +57,6 @@ contract GnosisSafeStateReader is MasterCopyStorage, ModuleManagerStorage, Owner
         return threshold;
     }
 
-    function isOwner(address owner)
-        public
-        view
-        returns (bool)
-    {
-        return owner != SENTINEL_OWNERS && owners[owner] != address(0);
-    }
-
     /// @dev Returns array of owners.
     /// @return Array of Safe owners.
     function getOwners()
@@ -79,10 +79,10 @@ contract GnosisSafeStateReader is MasterCopyStorage, ModuleManagerStorage, Owner
 }
 
 library GnosisSafeReader {
-    function checkOwner(GnosisSafe safe, address owner) internal view returns (bool isOwner) {
-        bytes memory isOwnerRequest = abi.encodeWithSignature("isOwner(address)", owner);
-        (,bytes memory isOwnerResponse) = address(safe).staticcall(
-            abi.encodeWithSignature("requestState(address,bytes)", address(0), isOwnerRequest)
+    function checkOwner(GnosisSafe safe, address owner) internal returns (bool isOwner) {
+        bytes memory isOwnerResponse = safe.simulateDelegatecall(
+            safe.getStateReader(),
+            abi.encodeWithSignature("isOwner(address)", owner)
         );
         (isOwner) = abi.decode(isOwnerResponse, (bool));
     }

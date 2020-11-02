@@ -1,8 +1,9 @@
 pragma solidity >=0.5.0 <0.7.0;
+
+import "@gnosis.pm/util-contracts/contracts/StorageAccessible.sol";
 import "./base/ModuleManager.sol";
 import "./base/OwnerManager.sol";
 import "./base/FallbackManager.sol";
-import "./base/StateProvider.sol";
 import "./common/MasterCopy.sol";
 import "./common/SignatureDecoder.sol";
 import "./common/SecuredTokenTransfer.sol";
@@ -25,7 +26,7 @@ contract GnosisSafeStorage {
 /// @author Richard Meissner - <richard@gnosis.io>
 /// @author Ricardo Guilherme Schmidt - (Status Research & Development GmbH) - Gas Token Payment
 contract GnosisSafe
-    is MasterCopy, ModuleManager, OwnerManager, SignatureDecoder, SecuredTokenTransfer, ISignatureValidatorConstants, FallbackManager, GnosisSafeStorage, StateProvider {
+    is MasterCopy, ModuleManager, OwnerManager, SignatureDecoder, SecuredTokenTransfer, ISignatureValidatorConstants, FallbackManager, GnosisSafeStorage, StorageAccessible {
 
     using GnosisSafeMath for uint256;
 
