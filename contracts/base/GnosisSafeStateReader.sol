@@ -1,10 +1,19 @@
 pragma solidity >=0.5.0 <0.7.0;
+import "./Executor.sol";
 import "./OwnerManager.sol";
 import "./ModuleManager.sol";
 import "../GnosisSafe.sol";
 import "../common/MasterCopy.sol";
 
-contract GnosisSafeStateReader is MasterCopyStorage, ModuleManagerStorage, OwnerManagerStorage, GnosisSafeStorage {
+contract GnosisSafeStateReader is Executor, MasterCopyStorage, ModuleManagerStorage, OwnerManagerStorage, GnosisSafeStorage {
+
+    bytes32 constant private GUARD_VALUE = keccak256("state_reader.guard.bytes32");
+
+    bytes32 guard;
+
+    constructor() public {
+        guard = GUARD_VALUE;
+    }
 
     function isOwner(address owner)
         public
@@ -76,6 +85,20 @@ contract GnosisSafeStateReader is MasterCopyStorage, ModuleManagerStorage, Owner
         }
         return array;
     }
+    
+    function estimateGas(address to, uint256 value, bytes calldata data, Enum.Operation operation)
+        external
+        returns (uint256)
+    {
+        // Make sure that contract cannot be suicided (required until EIP-2937 is implemented)
+        require(guard != GUARD_VALUE, "Reader should only be called via delegatecall");
+        uint256 startGas = gasleft();
+        // We don't provide an error message here, as we use it to return the estimate
+        // solium-disable-next-line error-reason
+        require(execute(to, value, data, operation, gasleft()), "Transaction failed");
+        return startGas - gasleft();
+    }
+
 }
 
 library GnosisSafeReader {

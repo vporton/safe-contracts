@@ -52,5 +52,15 @@ contract('Gas Estimation', function(accounts) {
         })
         console.log({resp2})
         console.log(await testReader.checkOwner.call(gnosisSafe.address, lw.accounts[0]))
+        const estimate = await gnosisSafe.contract.methods.simulateDelegatecall(
+            gnosisSafeStateReader.address, 
+            gnosisSafeStateReader.contract.methods.estimateGas(
+                gnosisSafe.address,
+                0,
+                await gnosisSafe.contract.methods.addOwner(lw.accounts[4], 2).encodeABI(),
+                0
+            ).encodeABI()
+        ).call()
+        console.log({estimate})
     })
 })
