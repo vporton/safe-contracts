@@ -42,7 +42,7 @@ let getCreationData = async function() {
     //Loop until generated address has the value we want
     let target = Address0
     //let nonce = 470000000
-    let nonce = 4202185806
+    let nonce = 900000000
     while(target[2] != "0"  || target[3] != "d" || target[4] != "a" || target[5] != "0" || target[38] != "5" || target[39] != "a" || target[40] != "f" || target[41] != "e"){
         if((nonce%1000000) == 0){
             console.log("Attempt nonce: ", nonce, " safe: ", target)
@@ -60,7 +60,7 @@ let getCreationData = async function() {
         gasToken: Address0,
         userCosts: 0,
         gasPrice: gasPrice,
-        creationNonce: nonce
+        creationNonce: nonce-1
     }
 }
 
