@@ -27,7 +27,7 @@ let getCreationData = async function() {
             "0xFcf00B0fEdBc8f2F35a3B8d4B858d5805f2Bb05D",
             "0x8fd960F1B9D68BAD2B97bD232FB75CC1f186B064"
         ],
-         3, Address0, "0x", Address0, Address0, "1000000", Address0
+         3, Address0, "0x", Address0, Address0, 0, Address0
     ).encodeABI()
 
     let proxyCreationCode = await proxyFactory.proxyCreationCode()
@@ -41,9 +41,12 @@ let getCreationData = async function() {
 
     //Loop until generated address has the value we want
     let target = Address0
-    let nonce = 0
-    while(target[2] != "0"  || target[3] != "d" || target[4] != "a" || target[5] != "0" || target[39] != "5" || target[40] != "a" || target[41] != "f" || target[42] != "e"){
-        console.log("Attempt nonce: ", nonce)
+    //let nonce = 470000000
+    let nonce = 4202185806
+    while(target[2] != "0"  || target[3] != "d" || target[4] != "a" || target[5] != "0" || target[38] != "5" || target[39] != "a" || target[40] != "f" || target[41] != "e"){
+        if((nonce%1000000) == 0){
+            console.log("Attempt nonce: ", nonce, " safe: ", target)
+        }
         let encodedNonce = abi.rawEncode(['uint256'], [nonce]).toString('hex')
         target = "0x" + ethUtil.generateAddress2(proxyFactory.address, ethUtil.keccak256("0x" + ethUtil.keccak256(gnosisSafeData).toString("hex") + encodedNonce), proxyCreationCode + constructorData).toString("hex")
         nonce++
@@ -55,7 +58,7 @@ let getCreationData = async function() {
         safe: target,
         data: gnosisSafeData,
         gasToken: Address0,
-        userCosts: "1000000",
+        userCosts: 0,
         gasPrice: gasPrice,
         creationNonce: nonce
     }
