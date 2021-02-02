@@ -59,7 +59,23 @@ module.exports = {
       },
       network_id: '246',
       gasPrice: 1
-    }
+    },
+    bsc: {
+      provider: function() {
+        return new HDWalletProvider(mnemonic, 'https://bsc-dataseed1.binance.org')
+      },
+      host: "localhost",
+      port: 8545,
+      network_id: '56'
+    },
+    bsctestnet: {
+      provider: function() {
+        return new HDWalletProvider(mnemonic, 'https://data-seed-prebsc-1-s1.binance.org:8545')
+      },
+      host: "localhost",
+      port: 8545,
+      network_id: '97'
+    },
   },
   compilers: {
     solc: {
