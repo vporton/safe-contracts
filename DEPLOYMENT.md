@@ -1,4 +1,4 @@
-# Contracts deployes on Binance Smart Chain
+# Contracts deployed on Binance Smart Chain
 
 Solidity 0.5.17
 
