@@ -87,5 +87,11 @@ module.exports = {
         evmVersion: "petersburg"
       }
     }
-  }
+  },
+  plugins: [
+    'truffle-plugin-verify'
+  ],
+  api_keys: {
+    etherscan: `${process.env.BINANCE_API_KEY}`
+  },
 };
