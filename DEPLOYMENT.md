@@ -1,8 +1,10 @@
 # Contracts deployed on Binance Smart Chain
 
-Solidity 0.5.17
+Solidity 0.5.17, optimization on.
 
-Commit `208745735c95c7770cf04f69ff2a56a2c44b73b8` of this repo. (TODO: Check that the binary code matches.)
+All the below contracts are verified by [BscScan.com](https://bscscan.com) to be exactly the same
+as the commit `0dd84e3b23be22317a1c906ec0b422527af65c2b` of this repo, to prevent any possibility
+of a fraud.
 
 **GnosisSafe** `0x951e473fDEd05d15E4Bbb4B56C715EEe8C27B5A6`
 
